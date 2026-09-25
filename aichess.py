@@ -473,27 +473,27 @@ class Aichess():
         
         frontier = [] # list of states to explore, each state : (f, g, state)
 
+        #the basecode doesn't add g into the frontier, so we will keep a dictionary 
+        g_cost={} # dictionary to keep the g cost for each state
+
         # Initial state and heuristic value of the frontier 
-        g = 0  # initially we haven't made any moves
+        g_cost[currentState] = 0  # initially we haven't made any moves
         h = self.h(currentState)  # heuristic initial value 
-        f = g + h  # the A* function
+        f = g_cost[currentState] + h  # the A* function
 
         #we add the initial state to the frontier
-        frontier.append((f, g, currentState)) #f: priority of the state, g: cost to reach the state
+        frontier.append((f, currentState)) #f: priority of the state
 
 
 
 
-        # You have to also implement the heuristic function h().
-        frontier.append((self.h(currentState),currentState))
+	# OUR CODE OF THE HEURISTICS:
 
-	# OUR CODE:
-
-    #heuristic function h() devided in two SUBFUNCTIONS: white king and white rook
+    # heuristic function h() devided in two SUBFUNCTIONS: white king and white rook
 
     #1. white king heuristic: Chebyshev distance to the white king in the possible checkmate state (target)
     def hKing(self, king, target):
-        return max(
+        return max( #it takes into account that the king can move diagonally
             abs(king[0] - target[0]),
             abs(king[1] - target[1])
         )
@@ -501,10 +501,10 @@ class Aichess():
     #2. white rook heuristic: distance to the white rook in the possible checkmate state (target) 
     #it depends on the position of the rook and the target
     def hRook(self, rook, target):
-        #rook is at the same position as target
+        #rook is at the same position as target on the checkmate state -> 0 moves needed
         if rook[0] == target[0] and rook[1] == target[1]:
             return 0
-        #rook is in the same row or column as target
+        #rook is in the same row or column as target -> 1 move 
         elif rook[0] == target[0] or rook[1] == target[1]:
             return 1
         #rook is not in the same row or column as target -> max 2 moves
