@@ -13,6 +13,7 @@ import board
 import numpy as np
 import sys
 import queue
+import heapq #for the frontier in A* 
 from typing import List
 
 RawStateType = List[List[List[int]]]
@@ -470,7 +471,8 @@ class Aichess():
             depthCurrentState = depthNode
             
     def AStarSearch(self, currentState):
-        
+
+        #we changed the structure to a priority queue to make it easier 
         frontier = [] # list of states to explore, each state : (f, g, state)
 
         #the basecode doesn't add g into the frontier, so we will keep a dictionary 
@@ -482,7 +484,31 @@ class Aichess():
         f = g_cost[currentState] + h  # the A* function
 
         #we add the initial state to the frontier
-        frontier.append((f, currentState)) #f: priority of the state
+        #before: frontier.append((f, currentState)) #f: priority of the state
+        heapq.heappush(frontier, (f, currentState))  # with the priority queue
+
+
+        #LOOP until we find a checkmate or the frontier is empty 
+        while frontier:
+            #1. FIND THE BEST STATE IN THE FRONTIER (lowest f value), easy with priorityqueue
+            f, currentState = heapq.heappop(frontier)  # the state with the lowest f value
+
+            #2. IS IT A CHECKMATE STATE?
+            if self.isCheckMate(currentState):
+                # If it is checkmate, reconstruct the path 
+                g_cost = g_cost[currentState]  # the depth is the g cost
+                self.reconstructPath(currentState, g_cost)
+                break
+        
+
+        
+
+                
+
+            
+
+
+
 
 
 
