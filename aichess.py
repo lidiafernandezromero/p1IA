@@ -473,45 +473,96 @@ class Aichess():
     def AStarSearch(self, currentState):
 
         #we changed the structure to a priority queue to make it easier 
+        #we added 'g' to the frontier so we can keep track of the depth of each state without a separate structure
         frontier = [] # list of states to explore, each state : (f, g, state)
 
-        #the basecode doesn't add g into the frontier, so we will keep a dictionary 
-        g_cost={} # dictionary to keep the g cost for each state
+        #new structures: 
+        self.listVisitedStates = [] #list to keep track of the visited states
+        self.dictPath = {} #dict so we can reconstruct the path to the final state (checkmate) 
+
+        #inicialize the dictPath: it has no father / to str bc the key has to be hashable
+        self.dictPath[str(currentState)] = (None, 0) #state: (father, depth) OR ,-1 FOR THE BFS???!
 
         # Initial state and heuristic value of the frontier 
-        g_cost[currentState] = 0  # initially we haven't made any moves
+        g = 0  # initially we haven't made any moves
         h = self.h(currentState)  # heuristic initial value 
-        f = g_cost[currentState] + h  # the A* function
+        f = g + h  # the A* function
 
         #we add the initial state to the frontier
-        #before: frontier.append((f, currentState)) #f: priority of the state
-        heapq.heappush(frontier, (f, currentState))  # with the priority queue
+        #before: frontier.append((f, currentState)) / we changed the structure so it was easier
+        heapq.heappush(frontier, (f, g, currentState))  # with the priority queue
+
+        #SIMULATOR states, so we can move the pieces 
+        simulatorState = currentState
+        simulatorDepth = 0 
 
 
         #LOOP until we find a checkmate or the frontier is empty 
         while frontier:
             #1. FIND THE BEST STATE IN THE FRONTIER (lowest f value), easy with priorityqueue
-            f, currentState = heapq.heappop(frontier)  # the state with the lowest f value
+            f, g, currentState = heapq.heappop(frontier)  # the state with the lowest f value
+
+            #was this state already visited?
+            if self.isVisited(currentState):
+                continue  # if it was visited, we skip it
+
+            #!actualiza the simulator to current state
+            if g>0: #g>0 bc we don't need to move the pieces for the initial state
+                self.movePieces(simulatorState, simulatorDepth, currentState, g)  # move pieces to the current state
+
+            simulatorState = currentState  # update the simulator state
+            simulatorDepth = g  # update the simulator depth
+
+            # mark the current state as visited
+            self.listVisitedStates.append(currentState)
 
             #2. IS IT A CHECKMATE STATE?
             if self.isCheckMate(currentState):
+
                 # If it is checkmate, reconstruct the path 
-                g_cost = g_cost[currentState]  # the depth is the g cost
-                self.reconstructPath(currentState, g_cost)
+                self.reconstructPath(currentState, g) #state, depth==g 
                 break
-        
+
+            #3. IF IT'S NOT CHECKMATE, GET THE NEXT POSSIBLE STATES: generar successors
+            successors = self.getListNextStatesW(currentState)
+
+            #A BORRAR
+            #print("CURRENT:", currentState)
+            #print("SUCCESSORS:", successors)
+
+            for son in successors:
+                #if we haven't visited it AND it is not in the dictPath (to avoid error NoneType)
+                if not self.isVisited(son) and str(son) not in self.dictPath: 
+
+                    # g cost for the successor
+                    new_g= g+1  # each move: 1
+                    #heuristic 
+                    h = self.h(son)
+                    # f formula
+                    new_f = new_g + h
+
+                    #keep the father in dictPath to reconstruct the path later
+                    self.dictPath[str(son)] = (currentState, new_g)  # parent and depth
+
+                    #append sucessor to the frontier so we can explore it later
+                    heapq.heappush(frontier, (new_f, new_g, son))
+
+            if not frontier:
+                print("No more states to explore, checkmate NOT found.")
+                break
+
+        #print("visited states:")
+        #for state in self.listVisitedStates:
+        #   print(state)
+
+        #to answer the exercise, print visited states till target
+        print("Path to target (checkmate):")
+        for state in self.pathToTarget:
+            print(state)
+
+        print("Minimal depth:", len(self.pathToTarget)-1)  # -1 because the initial state is included in the path           
 
         
-
-                
-
-            
-
-
-
-
-
-
 
 	# OUR CODE OF THE HEURISTICS:
 
@@ -597,6 +648,7 @@ if __name__ == "__main__":
 
     # Get a copy of the current white state
     currentState = aichess.chess.board.currentStateW.copy()
+
     print("Current State:", currentState, "\n")
 
     # Run A* search
@@ -604,4 +656,6 @@ if __name__ == "__main__":
     print("#A* move sequence:", aichess.pathToTarget)
     print("A* End\n")
     print("Printing final board after A*:")
+    aichess.chess.boardSim.print_board()
+
 
